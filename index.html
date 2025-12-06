@@ -1,0 +1,1127 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>(推與敲) 第32篇 某甲 - 互動式古文學習 (GitHub版)</title>
+    <!-- 載入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 載入 Marked.js -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- 載入 FontAwesome 圖標 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- 載入 Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #fdfbf7; /* 米紙色 */
+            background-image: radial-gradient(#e5e7eb 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        .font-serif {
+            font-family: 'Noto Serif TC', serif;
+        }
+
+        /* 自定義滾動條 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #d97706; 
+            border-radius: 4px;
+        }
+
+        /* 標籤樣式 */
+        .tab-btn {
+            position: relative;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+        .tab-btn::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0%;
+            height: 3px;
+            background-color: #b45309;
+            transition: width 0.3s ease;
+        }
+        .tab-btn.active {
+            color: #92400e;
+            background-color: #fffbeb;
+        }
+        .tab-btn.active::after {
+            width: 100%;
+        }
+
+        /* 互動文字樣式 */
+        .interactive-word {
+            cursor: pointer;
+            border-bottom: 2px dotted #d97706;
+            transition: all 0.2s;
+            padding-bottom: 1px;
+            position: relative;
+            z-index: 20;
+            color: #92400e;
+            font-weight: 500;
+        }
+        .interactive-word:hover {
+            background-color: #fef3c7;
+            color: #b45309;
+            border-bottom-style: solid;
+        }
+
+        /* 彈出註釋 */
+        .note-popup {
+            animation: fadeIn 0.2s ease-out;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px) translateX(-50%); }
+            to { opacity: 1; transform: translateY(0) translateX(-50%); }
+        }
+
+        /* 懸停翻譯效果 */
+        .hover-trans-container:hover .hover-translation {
+            display: block;
+            animation: slideUp 0.3s ease-out;
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 故事模式樣式 */
+        .story-choice:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .fade-in-image {
+            animation: fadeInImg 0.8s ease-out forwards;
+        }
+        @keyframes fadeInImg {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        /* 聊天氣泡 */
+        .chat-bubble {
+            max-width: 85%;
+            border-radius: 1rem;
+            padding: 0.75rem 1rem;
+            margin-bottom: 1rem;
+            position: relative;
+            line-height: 1.6;
+        }
+        .chat-user {
+            background-color: #dbeafe;
+            color: #1e40af;
+            align-self: flex-end;
+            border-bottom-right-radius: 0.25rem;
+        }
+        .chat-ai {
+            background-color: #fff;
+            border: 1px solid #e5e7eb;
+            color: #374151;
+            align-self: flex-start;
+            border-bottom-left-radius: 0.25rem;
+        }
+        
+        /* 禁用狀態的樣式 */
+        input[type="radio"]:disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        .disabled-label {
+            cursor: not-allowed !important;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body class="text-gray-800 min-h-screen flex flex-col">
+
+    <!-- 頂部導航欄 -->
+    <nav class="bg-amber-800 text-amber-50 shadow-lg sticky top-0 z-50">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <i class="fas fa-book-open text-2xl mr-3"></i>
+                    <span class="font-bold text-xl tracking-wider">古文互動教室</span>
+                </div>
+                <div class="hidden md:block text-sm opacity-80">
+                    GitHub Pages 版
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div id="app" class="max-w-5xl mx-auto p-4 sm:p-6 w-full flex-grow flex flex-col">
+        
+        <!-- 課程標題卡片 -->
+        <header class="bg-white rounded-2xl shadow-md overflow-hidden mb-6 border border-amber-100">
+            <div class="bg-gradient-to-r from-amber-100 to-orange-50 p-6 sm:p-8">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <h1 id="main-title" class="text-3xl sm:text-4xl font-serif font-bold text-amber-900 mb-2"></h1>
+                        <div class="flex items-center text-amber-700 space-x-4">
+                            <span class="flex items-center"><i class="fas fa-user-edit mr-2"></i><span id="author-name"></span></span>
+                            <span class="flex items-center"><i class="fas fa-scroll mr-2"></i><span id="source-name"></span></span>
+                        </div>
+                    </div>
+                    <div class="hidden md:block">
+                        <span class="inline-block bg-amber-200 text-amber-900 text-xs px-3 py-1 rounded-full font-bold uppercase tracking-wide">國中語文</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- 功能標籤 -->
+        <div class="flex flex-wrap justify-center bg-white rounded-xl shadow-sm mb-6 border border-gray-100 sticky top-20 z-40">
+            <button id="tab-overview" class="tab-btn active px-4 py-3 md:px-6 md:py-4 font-medium text-gray-600 hover:text-amber-700" onclick="switchTab('overview')">
+                <i class="fas fa-info-circle mr-2"></i>故事總覽
+            </button>
+            <button id="tab-reading" class="tab-btn px-4 py-3 md:px-6 md:py-4 font-medium text-gray-600 hover:text-amber-700" onclick="switchTab('reading')">
+                <i class="fas fa-glasses mr-2"></i>精讀與圖解
+            </button>
+            <button id="tab-deep" class="tab-btn px-4 py-3 md:px-6 md:py-4 font-medium text-gray-600 hover:text-amber-700" onclick="switchTab('deep')">
+                <i class="fas fa-project-diagram mr-2"></i>深度理解與地圖
+            </button>
+            <button id="tab-story" class="tab-btn px-4 py-3 md:px-6 md:py-4 font-medium text-gray-600 hover:text-amber-700" onclick="switchTab('story')">
+                <i class="fas fa-theater-masks mr-2"></i>抉擇之路(RPG)
+            </button>
+            <button id="tab-vocabulary" class="tab-btn px-4 py-3 md:px-6 md:py-4 font-medium text-gray-600 hover:text-amber-700" onclick="switchTab('vocabulary')">
+                <i class="fas fa-spell-check mr-2"></i>語詞精解
+            </button>
+            <button id="tab-analysis" class="tab-btn px-4 py-3 md:px-6 md:py-4 font-medium text-gray-600 hover:text-amber-700" onclick="switchTab('analysis')">
+                <i class="fas fa-feather-alt mr-2"></i>文義與修辭
+            </button>
+            <button id="tab-chat" class="tab-btn px-4 py-3 md:px-6 md:py-4 font-medium text-gray-600 hover:text-amber-700" onclick="switchTab('chat')">
+                <i class="fas fa-robot mr-2"></i>AI 角色扮演
+            </button>
+            <button id="tab-quiz" class="tab-btn px-4 py-3 md:px-6 md:py-4 font-medium text-gray-600 hover:text-amber-700" onclick="switchTab('quiz')">
+                <i class="fas fa-pen-nib mr-2"></i>隨堂測驗
+            </button>
+        </div>
+
+        <!-- 主要內容區 -->
+        <main id="content-display" class="flex-grow bg-white rounded-2xl shadow-lg p-6 sm:p-8 min-h-[500px] transition-all duration-300 relative">
+            <!-- 內容動態載入 -->
+        </main>
+        <!-- Tooltip container -->
+        <div id="svg-tooltip" class="tooltip"></div>
+
+    </div>
+
+    <!-- 註釋彈出框模板 -->
+    <div id="note-template" class="note-popup absolute bg-white border-l-4 border-amber-500 rounded-r-lg shadow-2xl p-4 z-50 hidden w-64" onclick="event.stopPropagation()">
+        <!-- 關閉按鈕 -->
+        <button onclick="closeNote()" class="absolute top-2 right-2 text-gray-400 hover:text-amber-600 transition">
+            <i class="fas fa-times"></i>
+        </button>
+        <div id="note-content">
+            <!-- 內容動態填充 -->
+        </div>
+    </div>
+
+    <!-- 結果模態框 (Score Modal) -->
+    <div id="score-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+        <div class="bg-white rounded-2xl p-8 max-w-sm w-full mx-4 shadow-2xl transform transition-all scale-100">
+            <div class="text-center">
+                <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-amber-100 mb-4">
+                    <i class="fas fa-trophy text-2xl text-amber-600"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-900 mb-2">測驗結果</h3>
+                <p class="text-gray-500 mb-6" id="score-text">你的得分是...</p>
+                <button onclick="closeScoreModal()" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-amber-600 text-base font-medium text-white hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 sm:text-sm">
+                    查看詳細解析
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 錯誤提示 -->
+    <div id="error-toast" class="fixed bottom-6 right-6 bg-red-50 border border-red-200 text-red-600 px-6 py-4 rounded-lg shadow-xl hidden z-50 flex items-center transition-all transform translate-y-10 opacity-0">
+        <i class="fas fa-exclamation-circle mr-3 text-xl"></i>
+        <div>
+            <p class="font-bold">發生錯誤</p>
+            <p id="error-msg" class="text-sm"></p>
+        </div>
+    </div>
+
+    <script>
+        const apiKey = ""; // API Key 由環境自動注入
+        
+        // ----------------------------------------------------
+        // 1. 教材資料結構 (Content Data) - 某甲 (笑林)
+        // ----------------------------------------------------
+        const contentData = {
+            metadata: {
+                title: "(推與敲) 第32篇 某甲",
+                author: "邯鄲淳",
+                source: "《笑林》"
+            },
+            summary: "這是一則流傳已久的笑話，通常歸於魏晉時期的笑話集。故事講述一個名叫某甲的人，半夜突然生急病，命令僕人鑽木取火照明。但因為夜晚陰暗，無法取火。某甲催得很急，僕人氣憤地反駁：「你這樣責備人太沒道理了！現在黑得像漆一樣，你為什麼不拿火照著我，讓我能找到鑽火的工具，然後火就容易得到了啊！」孔文舉（孔融）聽到這件事後，評論道：「責備別人也應當有正確的方法/道理啊。」",
+            
+            meaning: "這則寓言展示了一個經典的「邏輯悖論」或「循環論證」的謬誤。僕人的話雖然聽起來像是在反擊主人的無理催促，但他提出的解決方案（先有火照亮，才能找到鑽火工具）在本質上是荒謬的——如果已經有火照亮，何必還要鑽火？孔融的評論則帶有雙關意味，既可以理解為批評主人催促無方，也可以理解為諷刺僕人邏輯的荒謬（用錯誤的邏輯來反駁）。這提醒我們在急迫情境下，人容易失去邏輯判斷能力。",
+            
+            rhetoric: [
+                "**悖論 (Paradox):** 僕人的回答「何以不把火照我，我當得覓鑽火具」構成了邏輯上的死循環，是全文的笑點核心。",
+                "**譬喻 (Metaphor):** 「暗如漆」，以漆之黑比喻夜晚的黑暗程度。",
+                "**誇飾 (Hyperbole):** 「暴疾」、「催之急」、「暗如漆」，透過程度的加強來營造緊張與荒謬的對比。",
+                "**雙關 (Pun):** 孔文舉的「責人當以其方」，表面上是說責備人要用對方法，實際上可能是在嘲諷僕人那種「荒謬的邏輯方術」。"
+            ],
+            
+            vocabulary: [
+                { word: "某甲", zhuyin: "ㄇㄡˇ ㄐㄧㄚˇ", pos: "名詞", meaning: "某人，對不詳其名者的稱呼。這裡是故事主角。" },
+                { word: "暴疾", zhuyin: "ㄅㄠˋ ㄐㄧˊ", pos: "名詞", meaning: "突然發作的急病。" },
+                { word: "門人", zhuyin: "ㄇㄣˊ ㄖㄣˊ", pos: "名詞", meaning: "門客、僕人或弟子。在此指僕人。" },
+                { word: "鑽火", zhuyin: "ㄗㄨㄢ ㄏㄨㄛˇ", pos: "動詞片語", meaning: "鑽木取火。古代取火方式。" },
+                { word: "陰暝", zhuyin: "ㄧㄣ ㄇㄧㄥˊ", pos: "形容詞", meaning: "天色昏暗。暝，日落、天黑。" },
+                { word: "不得", zhuyin: "ㄅㄨˋ ㄉㄜˊ", pos: "動詞", meaning: "不能夠、無法（取得火）。" },
+                { word: "催", zhuyin: "ㄘㄨㄟ", pos: "動詞", meaning: "催促。" },
+                { word: "急", zhuyin: "ㄐㄧˊ", pos: "副詞", meaning: "急切地、緊迫地。" },
+                { word: "忿然", zhuyin: "ㄈㄣˋ ㄖㄢˊ", pos: "副詞", meaning: "憤怒的樣子。" },
+                { word: "責", zhuyin: "ㄗㄜˊ", pos: "動詞", meaning: "責備、要求。" },
+                { word: "無禮", zhuyin: "ㄨˊ ㄌㄧˇ", pos: "形容詞", meaning: "沒有禮貌、不講道理。" },
+                { word: "如漆", zhuyin: "ㄖㄨˊ ㄑㄧ", pos: "形容詞片語", meaning: "像漆一樣黑，形容非常黑暗。" },
+                { word: "何以", zhuyin: "ㄏㄜˊ ㄧˇ", pos: "疑問詞", meaning: "為什麼、憑什麼。" },
+                { word: "把火", zhuyin: "ㄅㄚˇ ㄏㄨㄛˇ", pos: "動詞片語", meaning: "拿著火把（照明）。" },
+                { word: "覓", zhuyin: "ㄇㄧˋ", pos: "動詞", meaning: "尋找。" },
+                { word: "具", zhuyin: "ㄐㄩˋ", pos: "名詞", meaning: "工具、器具。" },
+                { word: "易", zhuyin: "ㄧˋ", pos: "形容詞", meaning: "容易。" },
+                { word: "耳", zhuyin: "ㄦˇ", pos: "助詞", meaning: "罷了、而已。" },
+                { word: "孔文舉", zhuyin: "ㄎㄨㄥˇ ㄨㄣˊ ㄐㄩˇ", pos: "名詞", meaning: "孔融，字文舉，東漢末年名士，建安七子之一。" },
+                { word: "方", zhuyin: "ㄈㄤ", pos: "名詞", meaning: "方法、道理、準則。" }
+            ],
+
+            segments: [
+                {
+                    original: "某甲夜暴疾，命門人鑽火，",
+                    translation: "某甲在半夜突然得了急病，命令僕人去鑽木取火（以便照明或煎藥），",
+                    audioText: "某甲夜暴疾，命門人鑽火，",
+                    notes: {
+                        "暴疾": { zhuyin: "ㄅㄠˋ ㄐㄧˊ", type: "名詞", def: "突發急病。" },
+                        "門人": { zhuyin: "ㄇㄣˊ ㄖㄣˊ", type: "名詞", def: "僕人。" },
+                        "鑽火": { zhuyin: "ㄗㄨㄢ ㄏㄨㄛˇ", type: "動詞", def: "鑽木取火。" }
+                    },
+                    imageData: "images/reading_segment_1.jpg"
+                },
+                {
+                    original: "其夜陰暝，不得火，催之急，",
+                    translation: "那天晚上天色陰沉黑暗，僕人一直生不起火來。某甲催促得很急，",
+                    audioText: "其夜陰暝，不得火，催之急，",
+                    notes: {
+                        "陰暝": { zhuyin: "ㄧㄣ ㄇㄧㄥˊ", type: "形容詞", def: "昏暗。" },
+                        "不得": { zhuyin: "ㄅㄨˋ ㄉㄜˊ", type: "動詞", def: "無法取得。" },
+                        "急": { zhuyin: "ㄐㄧˊ", type: "副詞", def: "急切。" }
+                    },
+                    imageData: "images/reading_segment_2.jpg"
+                },
+                {
+                    original: "門人忿然曰：「君責人亦太無禮，今暗如漆，何以不把火照我，我當得覓鑽火具，然後易得耳。」",
+                    translation: "僕人氣憤地說：「您責備人也太沒道理了！現在黑得像漆一樣，您為什麼不拿火照著我，讓我能找到鑽火的工具，這樣火就容易得到了啊。」",
+                    audioText: "門人忿然曰：君責人亦太無禮，今暗如漆，何以不把火照我，我當得覓鑽火具，然後易得耳。",
+                    notes: {
+                        "忿然": { zhuyin: "ㄈㄣˋ ㄖㄢˊ", type: "副詞", def: "憤怒地。" },
+                        "如漆": { zhuyin: "ㄖㄨˊ ㄑㄧ", type: "形容詞", def: "極黑。" },
+                        "把火": { zhuyin: "ㄅㄚˇ ㄏㄨㄛˇ", type: "動詞", def: "拿火照明。" },
+                        "覓": { zhuyin: "ㄇㄧˋ", type: "動詞", def: "尋找。" }
+                    },
+                    imageData: "images/reading_segment_3.jpg"
+                },
+                {
+                    original: "孔文舉聞之曰：「責人當以其方也。」",
+                    translation: "孔融聽說了這件事，評論說：「責備人應當要用對方法（或：責備人也要看那個人是不是講道理的）。」",
+                    audioText: "孔文舉聞之曰：責人當以其方也。",
+                    notes: {
+                        "孔文舉": { zhuyin: "ㄎㄨㄥˇ ㄨㄣˊ ㄐㄩˇ", type: "名詞", def: "孔融。" },
+                        "方": { zhuyin: "ㄈㄤ", type: "名詞", def: "方法、道理。" }
+                    },
+                    imageData: "images/reading_segment_4.jpg"
+                }
+            ],
+            quiz: [
+                { q: "故事中的「某甲」發生了什麼事？", opts: ["A. 肚子餓", "B. 房子失火", "C. 突然生急病", "D. 找不到錢"], ans: "C", exp: "原文：「某甲夜暴疾」。" },
+                { q: "「鑽火」的意思是？", opts: ["A. 玩火", "B. 鑽木取火", "C. 尋找火把", "D. 救火"], ans: "B", exp: "古代取火的方式。" },
+                { q: "為什麼僕人「不得火」？", opts: ["A. 工具壞了", "B. 他不會用", "C. 夜晚陰暗看不見", "D. 木頭濕了"], ans: "C", exp: "原文：「其夜陰暝，不得火」。因太黑找不到工具或看不清操作。" },
+                { q: "僕人對於主人的催促反應如何？", opts: ["A. 欣然接受", "B. 默不作聲", "C. 忿然（生氣）", "D. 痛哭流涕"], ans: "C", exp: "原文：「門人忿然曰」。" },
+                { q: "僕人提出的解決方案有什麼邏輯問題？", opts: ["A. 態度太差", "B. 循環論證（要有火才能找工具生火）", "C. 工具太貴", "D. 他想睡覺"], ans: "B", exp: "既然有火照明，就不需要再鑽火了，這是邏輯上的矛盾。" },
+                { q: "「暗如漆」使用了什麼修辭？", opts: ["A. 轉化", "B. 譬喻（明喻）", "C. 倒反", "D. 映襯"], ans: "B", exp: "像漆一樣黑，喻詞為「如」。" },
+                { q: "孔文舉是指哪位歷史人物？", opts: ["A. 孔子", "B. 孔明", "C. 孔融", "D. 孔捷"], ans: "C", exp: "孔融，字文舉。" },
+                { q: "孔文舉說「責人當以其方」，這裡的「方」最可能指？", opts: ["A. 方向", "B. 藥方", "C. 方法、道理", "D. 地方"], ans: "C", exp: "指責備人要合乎道理或方法。" },
+                { q: "「暴疾」的「暴」讀音是？", opts: ["A. ㄅㄠˋ", "B. ㄆㄨˋ", "C. ㄅㄛˊ", "D. ㄅㄧˋ"], ans: "A", exp: "音ㄅㄠˋ，突然、急劇。" },
+                { q: "文中「門人」的身分是？", opts: ["A. 看門的人", "B. 學生", "C. 僕人", "D. 路人"], ans: "C", exp: "在此語境下指服侍某甲的人。" },
+                { q: "「何以不把火照我」的「把」意思是？", opts: ["A. 握住、拿著", "B. 守衛", "C. 量詞", "D. 靠近"], ans: "A", exp: "把持、拿著。" },
+                { q: "這則故事主要在諷刺什麼？", opts: ["A. 古代醫療落後", "B. 主僕關係惡劣", "C. 邏輯混亂與強詞奪理", "D. 天氣不好"], ans: "C", exp: "諷刺僕人荒謬的邏輯，以及在急迫情境下的無理對話。" },
+                { q: "「然後易得耳」的「耳」字意思是？", opts: ["A. 耳朵", "B. 罷了、而已", "C. 而且", "D. 聽見"], ans: "B", exp: "句末助詞，表示「...罷了」。" },
+                { q: "「陰暝」形容的是？", opts: ["A. 心情不好", "B. 鬼氣森森", "C. 天色昏暗", "D. 生病痛苦"], ans: "C", exp: "指夜晚天色陰沈黑暗。" },
+                { q: "若要用一句成語形容僕人的要求，何者最不恰當？", opts: ["A. 緣木求魚", "B. 倒果為因", "C. 騎驢找馬", "D. 實事求是"], ans: "D", exp: "僕人的要求完全不切實際且邏輯錯誤，絕非實事求是。" },
+                { q: "「責人亦太無禮」的「無禮」是指？", opts: ["A. 沒有送禮物", "B. 沒禮貌", "C. 不講道理", "D. 沒有力氣"], ans: "C", exp: "指主人的要求不合情理（在黑暗中強人所難）。" },
+                { q: "孔融這句話可能帶有什麼語氣？", opts: ["A. 讚賞", "B. 悲傷", "C. 嘲諷", "D. 憤怒"], ans: "C", exp: "帶有幽默與嘲諷的意味。" },
+                { q: "故事發生在什麼時間？", opts: ["A. 清晨", "B. 正午", "C. 黃昏", "D. 半夜（夜）"], ans: "D", exp: "原文：「某甲夜暴疾」。" },
+                { q: "「具」在文中（鑽火具）的意思是？", opts: ["A. 具體", "B. 工具", "C. 具備", "D. 俱全"], ans: "B", exp: "指取火用的工具。" },
+                { q: "下列何者並非本故事的啟示？", opts: ["A. 邏輯思考很重要", "B. 遇事應冷靜", "C. 晚上生病很危險", "D. 要多練習鑽木取火"], ans: "D", exp: "故事重點在於邏輯與應對，而非取火技術本身。" }
+            ]
+        };
+
+        // 預處理所有關鍵字
+        const allKeywords = {};
+        contentData.segments.forEach((seg, idx) => {
+            Object.entries(seg.notes).forEach(([key, note]) => {
+                if (!allKeywords[key]) {
+                    allKeywords[key] = { ...note, segIdx: idx };
+                }
+            });
+        });
+
+        // ----------------------------------------------------
+        // 2. 全域狀態管理
+        // ----------------------------------------------------
+        let currentTab = 'overview';
+        let chatHistory = [];
+        let isGeneratingImage = false;
+        let currentAudio = null;
+        let currentPersona = 'bookboy'; 
+        let hasPreloadedStory = false;
+        let userAnswers = {}; 
+
+        // 角色設定
+        const personas = {
+            bookboy: {
+                name: "AI 書僮",
+                icon: "fas fa-user-graduate",
+                color: "blue",
+                intro: "少爺/小姐好！這篇《某甲》的故事雖短，但裡面的邏輯可是大有玄機喔！你能看出僕人說的話哪裡有問題嗎？",
+                systemPrompt: "你是一位幽默、博學的古代書僮，正在指導國中生閱讀《某甲》。請用輕鬆、鼓勵的語氣回答，引導學生思考邏輯問題。"
+            },
+            moujia: {
+                name: "某甲 (主人)",
+                icon: "fas fa-user-injured",
+                color: "amber",
+                intro: "哎喲...痛死我了！這麼黑，那個笨蛋還不快點生火！我都快病死了，他還在跟我頂嘴！",
+                systemPrompt: "你現在扮演故事主角某甲。你正在生急病，非常痛苦且急躁。你覺得僕人動作太慢，還講歪理，讓你很生氣。請用第一人稱「我」回答。"
+            },
+            servant: {
+                name: "門人 (僕人)",
+                icon: "fas fa-user",
+                color: "green",
+                intro: "黑漆漆的怎麼找東西嘛！主人只會催催催。如果有火照亮，我不就早就找到鑽子了嗎？這難道沒道理嗎？",
+                systemPrompt: "你現在扮演故事中的門人。你覺得很委屈，認為主人的要求強人所難。你堅信自己的邏輯是對的（雖然其實是錯的）。請用第一人稱「小的」或「我」回答。"
+            },
+            kongrong: {
+                name: "孔文舉 (孔融)",
+                icon: "fas fa-comment-dots",
+                color: "purple",
+                intro: "呵呵，這世間荒謬之事何其多。聽聞此事，倒也頗有趣味。責人...當以其方啊。",
+                systemPrompt: "你現在扮演東漢名士孔融。你聰明機智，說話帶有幽默與諷刺。你對這個故事的評論是點睛之筆。請用第一人稱「吾」或「文舉」回答。"
+            }
+        };
+
+        window.onload = function() {
+            document.getElementById('main-title').textContent = contentData.metadata.title;
+            document.getElementById('author-name').textContent = contentData.metadata.author;
+            document.getElementById('source-name').textContent = contentData.metadata.source;
+            switchTab('overview');
+
+            if ('speechSynthesis' in window) {
+                 window.speechSynthesis.onvoiceschanged = function() {
+                    window.speechSynthesis.getVoices();
+                };
+            }
+
+            document.addEventListener('click', (e) => {
+                const popup = document.getElementById('note-template');
+                if (!e.target.closest('.interactive-word') && !e.target.closest('.note-popup')) {
+                    closeNote();
+                }
+            });
+        };
+
+        function closeNote() {
+            const popup = document.getElementById('note-template');
+            if(popup) {
+                popup.classList.add('hidden');
+                popup.style.display = ''; 
+            }
+        }
+
+        function switchTab(tabId) {
+            currentTab = tabId;
+            closeNote();
+
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+
+            const container = document.getElementById('content-display');
+            container.style.opacity = '0';
+            
+            setTimeout(() => {
+                switch(tabId) {
+                    case 'overview': renderOverview(container); break;
+                    case 'reading': renderReading(container); break;
+                    case 'deep': renderDeepUnderstanding(container); break;
+                    case 'vocabulary': renderVocabulary(container); break;
+                    case 'analysis': renderAnalysis(container); break;
+                    case 'chat': renderChat(container); break;
+                    case 'quiz': renderQuiz(container); break;
+                    case 'story': 
+                        renderStory(container); 
+                        preloadStoryImages(); 
+                        break;
+                }
+                container.style.opacity = '1';
+            }, 200);
+        }
+
+        function renderOverview(container) {
+            container.innerHTML = `
+                <div class="max-w-3xl mx-auto">
+                    <div class="bg-amber-50 rounded-xl p-6 border-l-8 border-amber-600 mb-8">
+                        <h2 class="text-2xl font-bold text-amber-900 mb-4"><i class="fas fa-scroll mr-2"></i>故事大意</h2>
+                        <p class="text-lg text-gray-700 leading-loose text-justify">${contentData.summary}</p>
+                    </div>
+                    
+                    <div class="flex justify-center">
+                         <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition flex flex-col justify-center items-center text-center max-w-md w-full">
+                            <div class="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mb-4">
+                                <i class="fas fa-lightbulb text-amber-600 text-2xl"></i>
+                            </div>
+                            <h3 class="font-bold text-gray-800 mb-2">學習重點</h3>
+                            <p class="text-gray-600 text-sm">辨識邏輯謬誤（循環論證），體會古代寓言的幽默與諷刺。</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderReading(container) {
+            let segmentsHtml = contentData.segments.map((seg, idx) => {
+                let displayHtml = seg.original;
+                Object.keys(seg.notes).forEach(key => {
+                    displayHtml = displayHtml.replace(key, `<span class="interactive-word" onclick="showNote('${key}', ${idx}, this, event)">${key}</span>`);
+                });
+
+                let imageSection = seg.imageData 
+                    ? `<div class="mt-6 rounded-lg overflow-hidden shadow-lg animate-fade-in"><img src="${seg.imageData}" class="w-full h-auto rounded-lg shadow-md" alt="段落插圖"></div>`
+                    : `<div id="img-placeholder-${idx}" class="hidden mt-6 h-48 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400 border-2 border-dashed border-gray-300"><i class="fas fa-image mr-2"></i>圖解區</div>`;
+
+                return `
+                    <div class="group mb-12 relative pl-6 border-l-4 border-gray-200 hover:border-amber-500 transition-colors duration-300">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-bold text-gray-400 uppercase tracking-widest">段落 ${idx + 1}</span>
+                            <div class="flex gap-2">
+                                <button onclick="playAudio('${seg.audioText}')" class="w-8 h-8 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center hover:bg-amber-200 transition" title="朗讀">
+                                    <i class="fas fa-volume-up text-sm"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="relative hover-trans-container cursor-help py-2">
+                            <p class="text-2xl sm:text-3xl font-serif text-gray-800 leading-relaxed relative z-10">${displayHtml}</p>
+                            <div class="hover-translation hidden absolute left-0 top-full mt-2 w-full z-20">
+                                <div class="bg-white/95 backdrop-blur-sm p-4 rounded-lg text-gray-700 text-lg leading-7 border border-amber-200 shadow-xl relative">
+                                    <div class="absolute -top-2 left-8 w-4 h-4 bg-white border-t border-l border-amber-200 transform rotate-45"></div>
+                                    <span class="font-bold text-amber-700 mr-1"><i class="fas fa-language mr-1"></i>語譯：</span> ${seg.translation}
+                                </div>
+                            </div>
+                        </div>
+                        ${imageSection}
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = `
+                <div class="flex flex-col md:flex-row gap-6 mb-8 items-center bg-amber-50 p-4 rounded-xl border border-amber-100">
+                    <div class="flex-grow">
+                        <h3 class="font-bold text-amber-900 text-lg">AI 意境圖解</h3>
+                        <p class="text-sm text-amber-700">重現某甲夜疾與門人爭辯的場景。</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button id="btn-gen-all" onclick="generateAllImages()" class="px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg shadow transition flex items-center font-medium">
+                            <i class="fas fa-paint-brush mr-2"></i>一鍵生成全篇圖解
+                        </button>
+                        <button id="btn-download-all" onclick="downloadAllImages()" class="px-5 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow transition flex items-center font-medium">
+                            <i class="fas fa-download mr-2"></i>下載所有圖片
+                        </button>
+                    </div>
+                </div>
+                <div class="max-w-3xl mx-auto">
+                    ${segmentsHtml}
+                </div>
+                <div class="text-center mt-12 pb-6 text-gray-400 text-sm space-y-1">
+                    <p><i class="fas fa-mouse-pointer mr-1"></i> 點擊底線文字查看註釋</p>
+                    <p><i class="fas fa-hand-pointer mr-1"></i> 滑鼠移過古文即可查看翻譯</p>
+                </div>
+            `;
+        }
+        
+        function renderDeepUnderstanding(container) {
+            container.innerHTML = `
+                <div class="space-y-12">
+                    <!-- Logic Paradox Diagram -->
+                    <section>
+                        <h2 class="text-2xl font-bold text-amber-900 mb-4"><i class="fas fa-sync-alt mr-2"></i>邏輯悖論迴圈圖</h2>
+                        <div class="bg-white rounded-xl shadow-lg p-8 border-4 border-amber-200 flex justify-center items-center overflow-hidden" style="min-height: 350px;">
+                             <svg viewBox="0 0 600 300" class="w-full h-full">
+                                <defs>
+                                    <marker id="arrow-logic" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                        <polygon points="0 0, 10 3.5, 0 7" fill="#666" />
+                                    </marker>
+                                </defs>
+                                
+                                <!-- Step 1: Goal -->
+                                <circle cx="300" cy="50" r="40" fill="#fef3c7" stroke="#d97706" stroke-width="2" />
+                                <text x="300" y="55" text-anchor="middle" font-weight="bold">欲得火</text>
+
+                                <!-- Step 2: Obstacle -->
+                                <rect x="450" y="130" width="100" height="50" rx="10" fill="#374151" stroke="#000" />
+                                <text x="500" y="160" text-anchor="middle" font-weight="bold" fill="white">暗如漆</text>
+                                
+                                <!-- Step 3: Need Tool -->
+                                <rect x="300" y="250" width="120" height="50" rx="10" fill="#dbeafe" stroke="#2563eb" />
+                                <text x="360" y="280" text-anchor="middle" font-weight="bold">需覓鑽火具</text>
+
+                                <!-- Step 4: Paradox Solution -->
+                                <rect x="50" y="130" width="120" height="50" rx="10" fill="#fee2e2" stroke="#dc2626" />
+                                <text x="110" y="160" text-anchor="middle" font-weight="bold">需火照我</text>
+
+                                <!-- Arrows forming a loop -->
+                                <path d="M340,50 Q500,50 500,130" stroke="#666" stroke-width="2" marker-end="url(#arrow-logic)" />
+                                <path d="M500,180 Q500,250 420,270" stroke="#666" stroke-width="2" marker-end="url(#arrow-logic)" />
+                                <path d="M300,270 Q110,270 110,180" stroke="#dc2626" stroke-width="3" marker-end="url(#arrow-logic)" />
+                                <path d="M110,130 Q110,50 260,50" stroke="#dc2626" stroke-width="3" marker-end="url(#arrow-logic)" stroke-dasharray="5,5" />
+                                
+                                <text x="200" y="100" text-anchor="middle" font-size="12" fill="#dc2626" font-weight="bold">矛盾：有火何須鑽？</text>
+                            </svg>
+                        </div>
+                    </section>
+
+                    <!-- Context Diagram -->
+                    <section>
+                        <h2 class="text-2xl font-bold text-amber-900 mb-4"><i class="fas fa-project-diagram mr-2"></i>情境因果圖</h2>
+                        <div class="bg-white rounded-xl shadow-lg p-6 border border-amber-100 flex justify-center overflow-x-auto">
+                            <svg width="600" height="200">
+                                <!-- Master -->
+                                <g transform="translate(100, 100)">
+                                    <circle r="40" fill="#fee2e2" stroke="#dc2626" stroke-width="2" />
+                                    <text y="0" text-anchor="middle" font-weight="bold">某甲</text>
+                                    <text y="20" text-anchor="middle" font-size="12" fill="#991b1b">暴疾/急催</text>
+                                </g>
+                                
+                                <!-- Environment -->
+                                <g transform="translate(300, 50)">
+                                    <rect x="-40" y="-20" width="80" height="40" fill="#e5e7eb" stroke="#374151" />
+                                    <text y="5" text-anchor="middle" font-weight="bold">陰暝</text>
+                                </g>
+
+                                <!-- Servant -->
+                                <g transform="translate(500, 100)">
+                                    <circle r="40" fill="#dcfce7" stroke="#16a34a" stroke-width="2" />
+                                    <text y="0" text-anchor="middle" font-weight="bold">門人</text>
+                                    <text y="20" text-anchor="middle" font-size="12" fill="#166534">忿然/不得</text>
+                                </g>
+
+                                <!-- Arrows -->
+                                <line x1="140" y1="100" x2="460" y2="100" stroke="#666" stroke-width="2" marker-end="url(#arrow-logic)" />
+                                <text x="300" y="120" text-anchor="middle" font-size="12">責備與反擊</text>
+                                
+                                <line x1="300" y1="70" x2="480" y2="90" stroke="#374151" stroke-width="1" stroke-dasharray="4,4" />
+                                <text x="380" y="80" text-anchor="middle" font-size="10">導致看不見</text>
+                            </svg>
+                        </div>
+                    </section>
+                </div>
+            `;
+        }
+
+        function renderVocabulary(container) {
+            const cardsHtml = contentData.vocabulary.map(item => `
+                <div class="bg-white border border-amber-100 rounded-xl p-5 shadow-sm hover:shadow-md transition duration-200 flex flex-col h-full">
+                    <div class="flex justify-between items-start mb-3">
+                        <h3 class="text-2xl font-bold text-amber-900">${item.word}</h3>
+                    </div>
+                    <div class="text-sm text-gray-500 mb-2 font-mono bg-amber-50 inline-block px-2 py-1 rounded self-start">
+                        ${item.zhuyin} • <span class="text-amber-700 font-semibold">${item.pos}</span>
+                    </div>
+                    <p class="text-gray-700 text-lg leading-relaxed flex-grow">${item.meaning}</p>
+                </div>
+            `).join('');
+
+            container.innerHTML = `
+                <div class="max-w-4xl mx-auto">
+                    <h2 class="text-3xl font-bold text-center mb-8 text-amber-900 font-serif">語詞精解</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        ${cardsHtml}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderAnalysis(container) {
+            const rhetoricHtml = contentData.rhetoric.map(r => `
+                <div class="flex items-start mb-4 p-4 bg-white rounded-lg border border-gray-100 shadow-sm">
+                    <div class="flex-shrink-0 mr-4">
+                        <div class="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center text-amber-600 font-bold">
+                            <i class="fas fa-pen-fancy"></i>
+                        </div>
+                    </div>
+                    <div>
+                        ${marked.parse(r)}
+                    </div>
+                </div>
+            `).join('');
+
+            container.innerHTML = `
+                <div class="max-w-3xl mx-auto space-y-10">
+                    <section>
+                        <h2 class="text-2xl font-bold text-amber-900 mb-4 flex items-center">
+                            <i class="fas fa-book-reader mr-3"></i>全文主旨與寓意
+                        </h2>
+                        <div class="bg-amber-50 p-6 rounded-xl border-l-8 border-amber-600 shadow-sm text-lg text-gray-800 leading-loose">
+                            ${contentData.meaning}
+                        </div>
+                    </section>
+                    <section>
+                        <h2 class="text-2xl font-bold text-amber-900 mb-4 flex items-center">
+                            <i class="fas fa-highlighter mr-3"></i>修辭與寫作技巧
+                        </h2>
+                        <div class="bg-gray-50 p-6 rounded-xl border border-gray-200">
+                            ${rhetoricHtml}
+                        </div>
+                    </section>
+                </div>
+            `;
+        }
+
+        function renderChat(container) {
+            const p = personas[currentPersona];
+            const themeColor = p.color; 
+            
+            const bgClass = `bg-${themeColor}-50`;
+            const borderClass = `border-${themeColor}-100`;
+            const iconBgClass = `bg-${themeColor}-200`;
+            const iconTextClass = `text-${themeColor}-600`;
+            const titleClass = `text-${themeColor}-900`;
+            const subClass = `text-${themeColor}-600`;
+            const focusBorderClass = `focus:border-${themeColor}-500`;
+            const focusRingClass = `focus:ring-${themeColor}-200`;
+            const btnBgClass = `bg-${themeColor}-600`;
+            const btnHoverClass = `hover:bg-${themeColor}-700`;
+
+            container.innerHTML = `
+                <div class="flex flex-col h-[600px]">
+                    <div class="${bgClass} p-4 rounded-t-xl border-b ${borderClass} flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 rounded-full ${iconBgClass} flex items-center justify-center mr-3 border-2 border-white shadow-sm">
+                                <i class="${p.icon} ${iconTextClass}"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold ${titleClass}">${p.name}</h3>
+                                <p class="text-xs ${subClass}">角色扮演中</p>
+                            </div>
+                        </div>
+                        <select onchange="switchPersona(this.value)" class="text-sm border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-2">
+                            <option value="bookboy" ${currentPersona === 'bookboy' ? 'selected' : ''}>AI 書僮</option>
+                            <option value="moujia" ${currentPersona === 'moujia' ? 'selected' : ''}>某甲</option>
+                            <option value="servant" ${currentPersona === 'servant' ? 'selected' : ''}>門人</option>
+                            <option value="kongrong" ${currentPersona === 'kongrong' ? 'selected' : ''}>孔文舉</option>
+                        </select>
+                    </div>
+                    
+                    <div id="chat-messages" class="flex-grow overflow-y-auto p-4 bg-gray-50 space-y-4 custom-scrollbar">
+                        <div class="chat-bubble chat-ai shadow-sm">
+                            ${processTextWithNotes(p.intro)}
+                        </div>
+                    </div>
+
+                    <div class="p-4 border-t border-gray-200 bg-white rounded-b-xl">
+                        <form onsubmit="handleChatSubmit(event)" class="relative">
+                            <input type="text" id="chat-input" class="w-full pl-4 pr-12 py-3 rounded-full border border-gray-300 ${focusBorderClass} focus:ring-2 ${focusRingClass} focus:outline-none transition" placeholder="輸入你的問題...">
+                            <button type="submit" class="absolute right-2 top-1/2 transform -translate-y-1/2 w-9 h-9 ${btnBgClass} text-white rounded-full ${btnHoverClass} flex items-center justify-center transition shadow-md">
+                                <i class="fas fa-paper-plane text-sm"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            `;
+            if (chatHistory.length > 0) renderHistory(); 
+        }
+
+        function switchPersona(newPersona) {
+            currentPersona = newPersona;
+            chatHistory = []; 
+            renderChat(document.getElementById('content-display'));
+        }
+
+        function renderQuiz(container) {
+            let quizHtml = contentData.quiz.map((q, i) => {
+                const val = ["A","B","C","D"];
+                const isAnswered = userAnswers[i] !== undefined;
+                const userAnswer = userAnswers[i];
+                let feedback = '';
+                let cardClass = "bg-white border border-gray-200";
+                let feedbackClass = "hidden mt-4 p-3 rounded-lg text-lg bg-gray-50"; 
+                
+                if (isAnswered) {
+                    feedbackClass = "mt-4 p-3 rounded-lg text-lg animate-fade-in"; 
+                    if (userAnswer === q.ans) {
+                        feedback = `<strong class="block mb-1"><i class="fas fa-check-circle mr-1"></i>答對了！</strong>${q.exp}`;
+                        cardClass = "bg-white border border-green-500 shadow-sm";
+                        feedbackClass += " bg-green-50 text-green-800";
+                    } else {
+                        const userOption = q.opts.find((opt, idx) => ["A","B","C","D"][idx] === userAnswer);
+                        const correctOption = q.opts.find((opt, idx) => ["A","B","C","D"][idx] === q.ans);
+                        feedback = `
+                            <div class="mb-2">
+                                <span class="block font-bold text-red-600"><i class="fas fa-times-circle mr-1"></i>答錯了</span>
+                                <span class="block text-gray-600">您的答案：${userOption || userAnswer}</span>
+                                <span class="block text-green-600 font-bold">正確答案：${correctOption}</span>
+                            </div>
+                            <div class="pt-2 border-t border-gray-200">
+                                <strong>解析：</strong>${q.exp}
+                            </div>
+                        `;
+                        cardClass = "bg-white border border-red-500 shadow-sm";
+                        feedbackClass += " bg-red-50 text-gray-800";
+                    }
+                }
+
+                return `
+                <div class="${cardClass} rounded-xl p-6 mb-6 shadow-sm transition-all duration-300" id="quiz-card-${i}">
+                    <p class="font-bold text-2xl text-gray-800 mb-4"><span class="text-amber-600 mr-2">Q${i+1}.</span>${q.q}</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        ${q.opts.map((opt, optIdx) => {
+                            const val = ["A","B","C","D"][optIdx];
+                            const isChecked = userAnswer === val ? 'checked' : '';
+                            const isDisabled = isAnswered ? 'disabled' : '';
+                            const labelClass = isAnswered ? 'disabled-label' : 'hover:bg-amber-50 cursor-pointer';
+
+                            return `
+                            <label class="flex items-center p-3 rounded-lg border border-gray-100 transition group ${labelClass}">
+                                <input type="radio" name="q-${i}" value="${val}" class="mr-3 text-amber-600 focus:ring-amber-500" onchange="checkAnswer(${i}, '${val}', '${q.ans}')" ${isChecked} ${isDisabled}>
+                                <span class="text-xl group-hover:text-amber-800">${opt}</span>
+                            </label>
+                            `;
+                        }).join('')}
+                    </div>
+                    <div id="feedback-${i}" class="${feedbackClass}">${feedback}</div>
+                </div>
+            `}).join('');
+            
+            container.innerHTML = `
+                <div class="max-w-3xl mx-auto pb-24">
+                    <h2 class="text-2xl font-bold text-center mb-8 text-gray-700">小試身手 (共20題)</h2>
+                    ${quizHtml}
+                    
+                    <div class="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 p-4 shadow-lg flex justify-center items-center z-40">
+                         <button onclick="submitQuiz()" class="px-8 py-3 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-full shadow-lg transition transform hover:scale-105 flex items-center text-lg">
+                            <i class="fas fa-paper-plane mr-2"></i> 交卷並查看成績
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // [Tab Story] 抉擇之路 (RPG)
+        const storyNodes = {
+            start: {
+                id: 'start',
+                text: "你是某甲的門人。今天晚上，主人突然大叫肚子痛（暴疾），痛得在床上打滾。外面一片漆黑，伸手不見五指。",
+                imageData: "images/rpg_start.jpg",
+                choices: [
+                    { text: "趕快找東西生火", next: "find_tool" },
+                    { text: "太黑了，我也沒辦法", next: "complain" }
+                ]
+            },
+            find_tool: {
+                id: 'find_tool',
+                text: "你試著在黑暗中摸索鑽火的工具。但因為太黑了（陰暝），你什麼都看不見，還撞到了桌腳。主人痛得大罵：「快點！你想痛死我嗎？（催之急）」",
+                imageData: "images/rpg_find_tool.jpg",
+                choices: [
+                    { text: "繼續摸索，努力嘗試", next: "fail" },
+                    { text: "忍不住回嘴", next: "argue" }
+                ]
+            },
+            complain: {
+                id: 'complain',
+                text: "你抱怨說看不見。主人大怒，說你沒用。你心裡也來氣了。",
+                imageData: "images/rpg_complain.jpg",
+                choices: [{ text: "回嘴", next: "argue" }]
+            },
+            fail: {
+                id: 'fail',
+                text: "【Bad Ending: 徒勞無功】你在黑暗中忙了半天，什麼都沒找到。主人痛得昏過去了，你也因為辦事不力被處罰。",
+                imageData: "images/rpg_fail.jpg",
+                choices: [{ text: "重來", next: "start" }],
+                isEnding: true
+            },
+            argue: {
+                id: 'argue',
+                text: "你氣不過，大聲說：「主人你也太不講理了！現在黑得像漆一樣，你為什麼不拿火照著我？這樣我不就很容易找到鑽火工具了嗎？」",
+                imageData: "images/rpg_argue.jpg",
+                choices: [
+                    { text: "覺得自己說得很有道理", next: "logic_fail" }
+                ]
+            },
+            logic_fail: {
+                id: 'logic_fail',
+                text: "【True Ending: 邏輯鬼才】主人聽了你的話，氣得說不出話來。這件事傳了出去，孔文舉聽到了，笑著說：「責人當以其方也。」你成了大家的笑柄。",
+                imageData: "images/rpg_logic_fail.jpg",
+                choices: [{ text: "重新體驗", next: "start" }],
+                isEnding: true,
+                win: true
+            }
+        };
+
+        function renderStory(container) {
+            if(!window.currentStoryNode) window.currentStoryNode = 'start';
+            const node = storyNodes[window.currentStoryNode];
+
+            let imageContent;
+            if (node.isLoading) {
+                 imageContent = `<div class="h-auto min-h-[256px] bg-gray-100 flex flex-col items-center justify-center relative overflow-hidden rounded-t-xl border-b border-gray-200"><div class="z-10 text-center animate-pulse"><i class="fas fa-palette text-4xl text-amber-400 mb-3"></i><p class="text-amber-600 font-bold">正在為您繪製場景...</p></div></div>`;
+            } else if (node.imageData) {
+                imageContent = `<div class="w-full overflow-hidden rounded-t-xl"><img src="${node.imageData}" class="w-full h-auto fade-in-image" alt="場景圖"></div>`;
+            } else {
+                 imageContent = `<div class="h-auto min-h-[256px] bg-gray-100 flex flex-col items-center justify-center relative overflow-hidden rounded-t-xl border-b border-gray-200"><div class="z-10 text-center"><i class="fas fa-image text-4xl text-gray-300 mb-3"></i><p class="text-gray-500 text-sm">場景圖準備中...</p></div></div>`;
+            }
+
+            container.innerHTML = `<div class="max-w-2xl mx-auto bg-white rounded-xl shadow-xl overflow-hidden border border-amber-100">${imageContent}<div class="p-8"><div class="flex items-center mb-4 text-amber-800 text-sm font-bold uppercase tracking-widest"><i class="fas fa-scroll mr-2"></i> 抉擇時刻</div><p class="text-xl leading-relaxed text-gray-800 mb-8 font-serif">${node.text}</p>${node.isEnding ? (node.win ? `<div class="text-center mb-6 text-green-600 font-bold text-2xl p-4 bg-green-50 rounded-lg border border-green-200"><i class="fas fa-trophy mr-2"></i>懸崖勒馬！</div>` : `<div class="text-center mb-6 text-red-600 font-bold text-2xl p-4 bg-red-50 rounded-lg border border-red-200"><i class="fas fa-skull-crossbones mr-2"></i>邏輯鬼才</div>`) : ''}<div class="grid gap-4">${node.choices.map(c => `<button onclick="nextStoryNode('${c.next}')" class="story-choice w-full py-4 px-6 bg-white hover:bg-amber-50 border-2 border-amber-200 hover:border-amber-400 rounded-xl text-amber-900 font-bold text-lg transition duration-200 flex items-center justify-between group"><span>${c.text}</span><i class="fas fa-chevron-right text-amber-300 group-hover:text-amber-600 transition"></i></button>`).join('')}</div></div></div>`;
+            if(node.win) { 
+                try {
+                    confetti({
+                        particleCount: 150,
+                        spread: 70,
+                        origin: { y: 0.6 }
+                    });
+                } catch(e) {
+                    console.log("Confetti effect skipped");
+                }
+            }
+        }
+
+        function nextStoryNode(nodeId) {
+            window.currentStoryNode = nodeId;
+            renderStory(document.getElementById('content-display'));
+        }
+        
+        async function preloadStoryImages() {
+            if (hasPreloadedStory) return;
+            hasPreloadedStory = true;
+            await generateStoryImage('start');
+            const allIds = Object.keys(storyNodes).filter(id => id !== 'start');
+            for (const id of allIds) {
+                await new Promise(r => setTimeout(r, 500));
+                generateStoryImage(id).catch(e => console.error(`Background gen failed for ${id}`, e));
+            }
+        }
+
+        async function generateStoryImage(nodeId) {
+            const node = storyNodes[nodeId];
+            if (node.imageData || node.isLoading) return; 
+            
+            if (!node.imgPrompt) {
+                node.imgPrompt = "Traditional Chinese colorful watercolor painting style. A symbolic scene representing a logical paradox. Artistic. NO text.";
+            }
+
+            node.isLoading = true;
+            if (window.currentStoryNode === nodeId) { const container = document.getElementById('content-display'); if(container) renderStory(container); }
+            try {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`;
+                const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ instances: [{ prompt: node.imgPrompt }], parameters: { sampleCount: 1 } }) });
+                const data = await response.json();
+                if (data.predictions && data.predictions[0].bytesBase64Encoded) { node.imageData = `data:image/png;base64,${data.predictions[0].bytesBase64Encoded}`; } else { throw new Error("No image data returned"); }
+            } catch (err) { console.error(`Story image failed for ${nodeId}:`, err); } finally { node.isLoading = false; if (window.currentStoryNode === nodeId) { const container = document.getElementById('content-display'); if(container) renderStory(container); } }
+        }
+
+        async function generateAllImages() {
+            if (isGeneratingImage) return;
+            const btn = document.getElementById('btn-gen-all');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>書畫繪製中...';
+            isGeneratingImage = true;
+            contentData.segments.forEach((_, i) => { document.getElementById(`img-placeholder-${i}`)?.classList.remove('hidden'); });
+            try {
+                for (let i = 0; i < contentData.segments.length; i++) {
+                    if (contentData.segments[i].imageData) continue;
+                    const prompt = contentData.segments[i].imagePrompt;
+                    const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`;
+                    const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ instances: [{ prompt: prompt }], parameters: { sampleCount: 1 } }) });
+                    const data = await response.json();
+                    if (data.predictions && data.predictions[0].bytesBase64Encoded) {
+                        const b64 = `data:image/png;base64,${data.predictions[0].bytesBase64Encoded}`;
+                        contentData.segments[i].imageData = b64;
+                        const ph = document.getElementById(`img-placeholder-${i}`);
+                        if (ph) { const imgDiv = document.createElement('div'); imgDiv.className = "mt-6 rounded-lg overflow-hidden shadow-lg animate-fade-in"; imgDiv.innerHTML = `<img src="${b64}" class="w-full h-auto rounded-lg shadow-md" alt="段落插圖">`; ph.replaceWith(imgDiv); }
+                    }
+                }
+            } catch (err) { showError("圖片生成過程中遇到了一些問題。"); console.error(err); } finally { isGeneratingImage = false; btn.disabled = false; btn.innerHTML = '<i class="fas fa-check mr-2"></i>繪製完成'; }
+        }
+
+        // Download function
+        async function downloadAllImages() {
+            const zip = new JSZip();
+            let count = 0;
+            const title = contentData.metadata.title || "download";
+            const folder = zip.folder("images");
+
+            contentData.segments.forEach((seg, index) => {
+                if (seg.imageData) {
+                    const base64Data = seg.imageData.replace(/^data:image\/(png|jpg|jpeg);base64,/, "");
+                    folder.file(`reading_segment_${index + 1}.png`, base64Data, {base64: true});
+                    count++;
+                }
+            });
+
+            Object.entries(storyNodes).forEach(([nodeId, node]) => {
+                if (node.imageData) {
+                    const base64Data = node.imageData.replace(/^data:image\/(png|jpg|jpeg);base64,/, "");
+                    folder.file(`rpg_${nodeId}.png`, base64Data, {base64: true});
+                    count++;
+                }
+            });
+
+            if (count === 0) {
+                showError("沒有可下載的圖片，請先生成圖片。");
+                return;
+            }
+
+            const content = await zip.generateAsync({type: "blob"});
+            saveAs(content, `${title}_images.zip`);
+        }
+
+        function checkAnswer(idx, val, ans) {
+            if (userAnswers[idx] !== undefined) return; 
+
+            userAnswers[idx] = val; 
+            
+            const radios = document.getElementsByName(`q-${idx}`);
+            for (let radio of radios) {
+                radio.disabled = true;
+                radio.parentElement.classList.add('disabled-label');
+            }
+
+            const feedbackEl = document.getElementById(`feedback-${idx}`);
+            const card = document.getElementById(`quiz-card-${idx}`);
+            const qData = contentData.quiz[idx];
+            if (!feedbackEl || !card) return;
+            
+            feedbackEl.className = 'mt-4 p-3 rounded-lg text-lg animate-fade-in';
+            card.classList.remove('border-green-500', 'border-red-500');
+
+            if (val === ans) {
+                feedbackEl.innerHTML = `<strong class="block mb-1"><i class="fas fa-check-circle mr-1"></i>答對了！</strong>${qData.exp}`;
+                feedbackEl.classList.add('bg-green-50', 'text-green-800');
+                card.classList.add('border-green-500');
+            } else {
+                feedbackEl.innerHTML = `<strong class="block mb-1"><i class="fas fa-times-circle mr-1"></i>再想一下...</strong>提示：${qData.exp.substring(0, 15)}...`;
+                feedbackEl.classList.add('bg-red-50', 'text-red-800');
+                card.classList.add('border-red-500');
+            }
+            // Ensure visible
+            feedbackEl.classList.remove('hidden');
+        }
+
+        function submitQuiz() {
+            const total = contentData.quiz.length;
+            const answered = Object.keys(userAnswers).length;
+            
+            if (answered < total) {
+                showError(`您還有 ${total - answered} 題未完成，請作答完畢後再交卷！`);
+                return;
+            }
+            
+            let correctCount = 0;
+            for (let i = 0; i < total; i++) {
+                if (userAnswers[i] === contentData.quiz[i].ans) {
+                    correctCount++;
+                }
+            }
+            
+            const score = Math.round((correctCount / total) * 100);
+
+            const scoreText = document.getElementById('score-text');
+            scoreText.innerHTML = `您的總分是 <span class="text-amber-600 font-bold text-4xl">${score}</span> 分`;
+            
+            const modal = document.getElementById('score-modal');
+            modal.classList.remove('hidden');
+            
+            try {
+                confetti({
+                    particleCount: 200,
+                    spread: 70,
+                    origin: { y: 0.6 }
+                });
+            } catch(e) {}
+        }
+
+        function closeScoreModal() {
+            const modal = document.getElementById('score-modal');
+            modal.classList.add('hidden');
+        }
+        
+        function showNote(key, segIdx, el, e) {
+            if (e && e.stopPropagation) e.stopPropagation();
+            const popup = document.getElementById('note-template');
+            const content = document.getElementById('note-content');
+            let noteData = null;
+            if (segIdx !== undefined && contentData.segments[segIdx] && contentData.segments[segIdx].notes[key]) { noteData = contentData.segments[segIdx].notes[key]; } else if (allKeywords[key]) { noteData = allKeywords[key]; }
+            if(!noteData) return;
+            content.innerHTML = `<div class="flex items-baseline justify-between border-b border-gray-100 pb-2 mb-2"><h4 class="text-xl font-bold text-amber-800">${key}</h4><span class="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded">${noteData.type || noteData.pos}</span></div><p class="text-sm text-gray-500 mb-1 font-mono">${noteData.zhuyin}</p><p class="text-gray-700 leading-relaxed">${noteData.def || noteData.meaning}</p>`;
+            const rect = el.getBoundingClientRect();
+            const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            let left = rect.left + scrollLeft;
+            let top = rect.bottom + scrollTop + 5; 
+            if (left + 260 > document.body.clientWidth) { left = document.body.clientWidth - 270; }
+            popup.style.left = `${left}px`;
+            popup.style.top = `${top}px`;
+            popup.classList.remove('hidden');
+        }
+
+        function processTextWithNotes(text) {
+            let processedText = marked.parse(text);
+            Object.keys(allKeywords).forEach(key => {
+                const regex = new RegExp(key + "(?![^<]*>)", "g");
+                processedText = processedText.replace(regex, `<span class="interactive-word bg-amber-50 px-1 rounded" onclick="showNote('${key}', undefined, this, event)">${key}</span>`);
+            });
+            return processedText;
+        }
+
+        function playAudio(text) {
+            if (!('speechSynthesis' in window)) { showError("您的瀏覽器不支援語音朗讀功能。"); return; }
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'zh-TW'; 
+            utterance.rate = 0.85; 
+            utterance.pitch = 1.0;
+            const voices = window.speechSynthesis.getVoices();
+            let targetVoice = voices.find(v => (v.lang === 'zh-TW' || v.lang === 'cmn-Hant-TW') && (v.name.includes('Google') || v.name.includes('Hanhan') || v.name.includes('Mei-Jia') || v.name.includes('Yating')));
+            if (!targetVoice) { targetVoice = voices.find(v => v.lang === 'zh-TW' || v.lang === 'cmn-Hant-TW'); }
+            if (!targetVoice) { targetVoice = voices.find(v => v.lang.startsWith('zh')); }
+            if (targetVoice) { utterance.voice = targetVoice; }
+            utterance.onerror = (e) => { console.error("Speech synthesis error:", e); showError("語音播放發生錯誤，可能是瀏覽器限制或網路問題。"); };
+            window.speechSynthesis.speak(utterance);
+        }
+        window.speechSynthesis.onvoiceschanged = function() { window.speechSynthesis.getVoices(); };
+
+        function showError(msg) {
+            const toast = document.getElementById('error-toast');
+            document.getElementById('error-msg').innerText = msg;
+            toast.classList.remove('hidden');
+            requestAnimationFrame(() => { toast.classList.remove('translate-y-10', 'opacity-0'); });
+            setTimeout(() => { toast.classList.add('translate-y-10', 'opacity-0'); setTimeout(() => toast.classList.add('hidden'), 300); }, 4000);
+        }
+
+    </script>
+</body>
+</html>
